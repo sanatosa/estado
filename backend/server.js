@@ -12,6 +12,7 @@ const API_URL = "https://b2b.atosa.es:880/api/articulos/";
 const API_USER = process.env.API_USER || "amazon@espana.es";
 const API_PASS = process.env.API_PASS || "0glLD6g7Dg";
 
+// Lee el Excel de grupos y crea un mapa codigo->grupo
 function cargarGrupos() {
   try {
     const workbook = XLSX.readFile('./grupos.xlsx');
@@ -110,6 +111,21 @@ app.get('/api/grupo/:nombre', async (req, res) => {
     res.json({ codigos });
   } catch (err) {
     console.error('Error en /api/grupo/:nombre:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Endpoint para obtener todos los artículos (con disponible)
+app.get('/api/all-articulos', async (req, res) => {
+  try {
+    const response = await axios.get(API_URL, {
+      auth: { username: API_USER, password: API_PASS },
+      timeout: 60000,
+      httpsAgent: new (require('https').Agent)({ rejectUnauthorized: false }),
+    });
+    res.json({ articulos: response.data });
+  } catch (err) {
+    console.error('Error en /api/all-articulos:', err);
     res.status(500).json({ error: err.message });
   }
 });
