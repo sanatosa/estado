@@ -12,7 +12,6 @@ const API_URL = "https://b2b.atosa.es:880/api/articulos/";
 const API_USER = process.env.API_USER || "amazon@espana.es";
 const API_PASS = process.env.API_PASS || "0glLD6g7Dg";
 
-// Lee el Excel de grupos y crea un mapa codigo->grupo
 function cargarGrupos() {
   try {
     const workbook = XLSX.readFile('./grupos.xlsx');
@@ -34,21 +33,15 @@ function cargarGrupos() {
 // Endpoint principal de resumen
 app.get('/api/resumen', async (req, res) => {
   try {
-    // Descarga todos los artículos de la API
     const response = await axios.get(API_URL, {
       auth: { username: API_USER, password: API_PASS },
       timeout: 60000,
       httpsAgent: new (require('https').Agent)({ rejectUnauthorized: false }),
     });
     const articulos = response.data;
-
-    // Mapa codigo->grupo desde el Excel
     const codigoAGrupo = cargarGrupos();
-
-    // Cuenta cuántos artículos hay en cada grupo
     const resumenPorGrupo = {};
     let sinGrupo = 0;
-
     articulos.forEach(a => {
       const codigo = a.codigo ? a.codigo.toString().trim() : '';
       const grupo = codigoAGrupo[codigo];
@@ -58,7 +51,6 @@ app.get('/api/resumen', async (req, res) => {
         sinGrupo++;
       }
     });
-
     res.json({
       total: articulos.length,
       porGrupo: resumenPorGrupo,
@@ -91,6 +83,33 @@ app.get('/api/sin-grupo', async (req, res) => {
     res.json({ sinGrupo });
   } catch (err) {
     console.error('Error en /api/sin-grupo:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Endpoint para obtener los códigos de un grupo concreto
+app.get('/api/grupo/:nombre', async (req, res) => {
+  try {
+    const nombreGrupo = req.params.nombre;
+    const response = await axios.get(API_URL, {
+      auth: { username: API_USER, password: API_PASS },
+      timeout: 60000,
+      httpsAgent: new (require('https').Agent)({ rejectUnauthorized: false }),
+    });
+    const articulos = response.data;
+    const codigoAGrupo = cargarGrupos();
+
+    const codigos = articulos
+      .filter(a => {
+        const codigo = a.codigo ? a.codigo.toString().trim() : '';
+        const grupo = codigoAGrupo[codigo];
+        return grupo === nombreGrupo;
+      })
+      .map(a => a.codigo);
+
+    res.json({ codigos });
+  } catch (err) {
+    console.error('Error en /api/grupo/:nombre:', err);
     res.status(500).json({ error: err.message });
   }
 });
