@@ -31,9 +31,10 @@ function cargarGrupos() {
   }
 }
 
+// Endpoint principal de resumen
 app.get('/api/resumen', async (req, res) => {
   try {
-    // 1. Descarga todos los artículos de la API
+    // Descarga todos los artículos de la API
     const response = await axios.get(API_URL, {
       auth: { username: API_USER, password: API_PASS },
       timeout: 60000,
@@ -41,10 +42,10 @@ app.get('/api/resumen', async (req, res) => {
     });
     const articulos = response.data;
 
-    // 2. Mapa codigo->grupo desde el Excel
+    // Mapa codigo->grupo desde el Excel
     const codigoAGrupo = cargarGrupos();
 
-    // 3. Cuenta cuántos artículos hay en cada grupo
+    // Cuenta cuántos artículos hay en cada grupo
     const resumenPorGrupo = {};
     let sinGrupo = 0;
 
@@ -65,6 +66,31 @@ app.get('/api/resumen', async (req, res) => {
     });
   } catch (err) {
     console.error('Error en /api/resumen:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Endpoint para ver los códigos sin grupo
+app.get('/api/sin-grupo', async (req, res) => {
+  try {
+    const response = await axios.get(API_URL, {
+      auth: { username: API_USER, password: API_PASS },
+      timeout: 60000,
+      httpsAgent: new (require('https').Agent)({ rejectUnauthorized: false }),
+    });
+    const articulos = response.data;
+    const codigoAGrupo = cargarGrupos();
+
+    const sinGrupo = articulos
+      .filter(a => {
+        const codigo = a.codigo ? a.codigo.toString().trim() : '';
+        return !codigoAGrupo[codigo];
+      })
+      .map(a => a.codigo);
+
+    res.json({ sinGrupo });
+  } catch (err) {
+    console.error('Error en /api/sin-grupo:', err);
     res.status(500).json({ error: err.message });
   }
 });
