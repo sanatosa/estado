@@ -2,17 +2,18 @@ const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 const XLSX = require('xlsx');
-const fs = require('fs');
 require('dotenv').config();
 
 const app = express();
-app.use(cors());
+app.use(cors()); // ¡CORS habilitado!
 app.use(express.json());
 
+// Configuración de usuario y endpoint de la API Atosa
 const API_URL = "https://b2b.atosa.es:880/api/articulos/";
 const API_USER = process.env.API_USER || "amazon@espana.es";
 const API_PASS = process.env.API_PASS || "0glLD6g7Dg";
 
+// Función para cargar grupos desde grupos.xlsx
 function cargarGrupos() {
   try {
     const workbook = XLSX.readFile('./grupos.xlsx');
@@ -23,6 +24,7 @@ function cargarGrupos() {
   }
 }
 
+// Endpoint principal de resumen
 app.get('/api/resumen', async (req, res) => {
   try {
     // 1. Consigue todos los artículos
@@ -56,7 +58,7 @@ app.get('/api/resumen', async (req, res) => {
   }
 });
 
-// Para que Render sepa que está vivo
+// Healthcheck
 app.get('/', (req, res) => res.send('ATOSA resumen backend OK!'));
 
 const PORT = process.env.PORT || 3000;
